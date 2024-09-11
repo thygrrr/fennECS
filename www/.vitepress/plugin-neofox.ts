@@ -33,7 +33,7 @@ export function neofoxPlugin(md: MarkdownIt, options?: Partial<EmojiPluginOption
       token.meta = { fileName: match[1] };
     }
 
-    state.pos += match[0].length;
+    state.pos += match[0].length;    
     return true;
   });
 

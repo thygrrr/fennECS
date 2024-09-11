@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace fennecs;
@@ -51,7 +52,7 @@ public readonly record struct Component
     public IStrongBox Box { get; }
     
     private World World { get; }
-    private TypeExpression Expression { get; }
+    internal TypeExpression Expression { get; }
     
     internal Component(TypeExpression expression, IStrongBox box, World world)
     {
@@ -163,7 +164,7 @@ public readonly record struct Comp
 /// </remarks>
 /// <param name="match">optional match expression for relation-backing components</param>
 /// <typeparam name="T">any type</typeparam>
-public readonly record struct Comp<T>(Match match = default)
+public readonly record struct Comp<T>(Match match = default) : IEquatable<Comp>, IEquatable<Component>
 {
     internal TypeExpression Expression => TypeExpression.Of<T>(match);
 
@@ -189,13 +190,30 @@ public readonly record struct Comp<T>(Match match = default)
     public static Comp<U> Matching<U>(U target) where U : class => new(Match.Link(target));
 
     /// <summary>
-    /// Does this Component match another Component Expression?
+    /// Does this Component Expression match another Component Expression?
     /// </summary>
     public bool Matches(Comp<T> other) => Expression.Matches(other.Expression);
+
+    /// <summary>
+    /// Does this Component Expression match another Component Expression?
+    /// </summary>
+    public bool Matches(Comp other) => Expression.Matches(other.Expression);
 
     /// <summary>
     /// Cast this component to the typeless representation used by filters, etc.
     /// (this representation wraps an opaque internal type of the ECS)
     /// </summary>
     public static implicit operator Comp(Comp<T> self) => new(self.Expression);
+
+    /// <inheritdoc />
+    public bool Equals(Comp other)
+    {
+        return Expression == other.Expression;
+    }
+
+    /// <inheritdoc />
+    public bool Equals(Component other)
+    {
+        return Expression == other.Expression;
+    }
 }

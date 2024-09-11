@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Collections;
+using System.Numerics;
 using System.Text;
 using System.Runtime.CompilerServices;
 using fennecs.pools;
@@ -38,7 +39,24 @@ public sealed class Archetype : IEnumerable<Entity>, IComparable<Archetype>
     /// Does this Archetype currently contain no Entities?
     /// </summary>
     public bool IsEmpty => Count == 0;
-    
+
+    /// <summary>
+    /// Called when a group of Entities is moved to this Archetype.
+    /// Events are invoked during <see cref="World.WorldMode.CatchUp"/> phase.
+    /// </summary>
+    public event ArchetypeArrive OnArrive;
+    public event ArchetypeArrive OnDepart;
+    public delegate void ArchetypeArrive(Span<Entity> entities);
+    public delegate void ArchetypeDepart(Span<Entity> entities);
+    public delegate void ComponentAdded(Span<Entity> entities, Comp component);
+    public delegate void ComponentRemoved(Span<Entity> entities, Comp component);
+
+    private bool CompTest(Span<Entity> entities, Comp component)
+    {
+        Comp<int>.Plain.Matches(component);
+        return component == Comp<int>.Plain;
+    }
+
     
     /// <summary>
     /// The World this Archetype is a part of.
