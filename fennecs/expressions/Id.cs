@@ -1,9 +1,160 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace fennecs;
 
+public record struct LType(ushort index)
+{
+    public ushort value = (ushort)(index & 0x0FFF);
+
+    public static ulong Id<T>() => (ulong) LanguageType<T>.Id << 48;
+}
+
+public record struct TypeIdentity(ulong raw)
+{
+    public Type type => LanguageType.Resolve((TypeID) typeId.index);
+
+    public TypeKind kind => (TypeKind)((raw & 0xF0000000u) >> 28);
+
+    public Entity2 relation
+    {
+        get
+        {
+            Debug.Assert(kind == TypeKind.Relation);
+            return new(raw & 0x0000FFFFFFFFFFFF);
+        }
+    }
+
+    public ObjectLink link
+    {
+        get
+        {
+            Debug.Assert(kind == TypeKind.Link);
+            return new(raw & 0x0000FFFFFFFFFFFF);
+        }
+    }
+
+    public ulong key
+    {
+        get
+        {
+            Debug.Assert(kind == TypeKind.Keyed);
+            return raw & 0x0000FFFFFFFFFFFF;
+        }
+    }
+
+    private LType typeId => new LType((ushort)((raw >> 48) & 0x0FFF));
+
+    public static TypeIdentity Relation<T>(Entity2 target) => new((ulong)TypeKind.Relation | LType.Id<T>() | target.value);
+    public static TypeIdentity Link<T>(T target) => new((ulong)TypeKind.Link | LType.Id<T>() | ObjectLink.Of(target).value);
+    public static TypeIdentity Keyed<T, K>(K target) where K : notnull => new(KeyExpression.Of<T, K>(target).value);
+
+    
+    public TypeIdentity(LType type, Entity2 relation) : this((ulong)TypeKind.Relation | (ulong)type.index << 48 | relation.value) { }
+    public TypeIdentity(LType type, ObjectLink link) : this ((ulong)TypeKind.Link | (ulong)type.index << 48 | link.value){}
+}
+
+public enum TypeKind : ulong
+{
+    Plain =    0xA000000000000000,  // Plain Components (Comp<T>.Plain)
+    Relation = 0xE000000000000000,  // Entity Relations (Comp<T>.Matching(Entity e))
+
+    Link =      0xB000000000000000, // Object Links (Comp<T>.Link)
+    
+    Keyed =     0xC000000000000000, // Keyed Components (Comp<T>.Keyed<K>)
+
+    Devoid    = 0xD000000000000000, // Future: Tags and other 0-size components, saving storage and migration costs.
+    Spatial1D = 0x1000000000000000, // Future: 1D Spatial Components
+    Spatial2D = 0x2000000000000000, // Future: 2D Spatial Components
+    Spatial3D = 0x3000000000000000, // Future: 3D Spatial Components
+}
+
+
 [StructLayout(LayoutKind.Explicit)]
-internal record struct Id : IEquatable<object>
+public record struct ObjectLink(ulong value)
+{
+    [FieldOffset(0)]
+    public ulong value = value;
+    
+    [FieldOffset(0)]
+    internal int hashcode; 
+    
+    [FieldOffset(4)]
+    private uint header;
+    private uint kind => (header & 0xF0000000u) >> 28;
+    private Type type => LanguageType.Resolve((TypeID) ((header & 0x0FFF0000u) >> 16));
+
+    internal static ObjectLink Of<T>(T target)
+    {
+        return new((ulong)TypeKind.Link | (ulong)LanguageType<T>.Id << 48  | (ulong)LanguageType<T>.Id << 32 | (uint)target!.GetHashCode());
+    }
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public record struct KeyExpression(ulong value)
+{
+    [FieldOffset(0)]
+    public ulong value = value;
+    
+    [FieldOffset(0)]
+    internal int hashcode; 
+    
+    [FieldOffset(4)]
+    private uint header;
+    private uint kind => (header & 0xF0000000u) >> 28;
+    private Type type => LanguageType.Resolve((TypeID) ((header & 0x0FFF0000u) >> 16));
+
+    internal static KeyExpression Of<T, K>(K target) where K : notnull
+    {
+        return new((ulong)TypeKind.Keyed | (ulong)LanguageType<T>.Id << 48 | (ulong)LanguageType<K>.Id << 32 | (uint)target.GetHashCode());
+    }
+}
+
+/* New Identity / Entity / TypeExpression
+0x 0000 0000 0000 0000   64 bit (former identity)
+
+   0000 0000 0000 0000   None/Null (default)
+
+   0000 wggg eeee eeee   Entity (World w, Generation g, Entity e)
+
+   Attt 0000 0000 0000   Comp<T>.Plain
+   Bttt rrrr cccc cccc   Comp<T>.Link(T Link) - future objects can be retrieved from a registry by index r
+   Cttt 0kkk cccc cccc   Comp<T>.Keyed<K>(K key) (custom key typeId k, hash c)
+   Dttt 0000 0000 0000   Comp<T>.Plain (future: Tags and other 0-size components, saving storage and migration costs)
+   Ettt wggg eeee eeee   Entity Relation (World w, Generation g, EntityIndex e)
+
+ // Hypothetical "Spatial Archetypes" (not implemented)
+   1ttt cccc cccc cccc   1D spatial with configuration parameters c
+   2ttt cccc cccc cccc   2D spatial with configuration parameters c
+   3ttt cccc cccc cccc   3D spatial with configuration parameters c
+*/  
+
+[StructLayout(LayoutKind.Explicit)]
+public record struct Entity2 : IEquatable<object>
+{
+    [FieldOffset(0)]
+    public ulong value;
+    
+    [FieldOffset(0)]
+    internal int index; // Index in World Meta, or HashCode for Object
+    
+    [FieldOffset(4)]
+    private ushort header;
+
+    public Entity2(ulong value1)
+    {
+        value = value1;
+    }
+    
+    private int generation => header & 0x0FFF;
+    private int worldIndex => header & 0xF000 >> 12;
+    private World World => World.All[worldIndex];
+}
+
+    
+[StructLayout(LayoutKind.Explicit)]
+public record struct EntityNew : IEquatable<object>
 {
     [FieldOffset(0)]
     public ulong value;
@@ -18,10 +169,10 @@ internal record struct Id : IEquatable<object>
     private short header; //World index or Global Virtual Entity Class
 
     //TODO Remove us when old classes retired. :)
-    public static implicit operator Identity(Id self) => self.Identity;
-    public static implicit operator Entity(Id self) => new(self.World, self.Identity);
+    public static implicit operator Identity(EntityNew self) => self.Identity;
+    public static implicit operator Entity(EntityNew self) => new(self.World, self.Identity);
 
-    public Id(IdClass idClass, TypeID type, int value)
+    public EntityNew(IdClass idClass, TypeID type, int value)
     {
         header = (short) idClass;
         decoration = (ushort) type;
@@ -35,7 +186,7 @@ internal record struct Id : IEquatable<object>
     
     internal ref Meta Meta => ref World.GetEntityMeta(this);
     
-    internal Id Successor => this with { decoration = (ushort)(decoration + 1) };
+    internal EntityNew Successor => this with { decoration = (ushort)(decoration + 1) };
     internal Type Type => header switch
     {
         // Decoration is Object Type Id
@@ -52,12 +203,12 @@ internal record struct Id : IEquatable<object>
     };
 
     bool IEquatable<object>.Equals(object? obj) => 
-        (obj is Id other && other.value == value) || 
+        (obj is EntityNew other && other.value == value) || 
         (Class == IdClass.Object && obj != null && obj.GetHashCode() == index);
 
     public override int GetHashCode() => value.GetHashCode();
     
-    public static Id Of<T>(T target) where T : class => new(IdClass.Object, LanguageType<T>.Id, target.GetHashCode());
+    public static EntityNew Of<T>(T target) where T : class => new(IdClass.Object, LanguageType<T>.Id, target.GetHashCode());
 
     #region CRUD
 
@@ -73,14 +224,22 @@ internal record struct Id : IEquatable<object>
     /// <remarks>The reference may be left dangling if changes to the world are made after acquiring it. Use with caution.</remarks>
     /// <exception cref="ObjectDisposedException">If the Entity is not Alive..</exception>
     /// <exception cref="KeyNotFoundException">If no C or C(Target) exists in any of the World's tables for entity.</exception>
-    public ref C Ref<C>(Match match) where C : struct => ref World.GetComponent<C>(this, match);
+    public ref C Ref<C>(Match match) where C : struct
+    {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
+        return ref World.GetComponent<C>(this, match); 
+    }
 
 
     /// <inheritdoc cref="Ref{C}(fennecs.Match)"/>
-    public ref C Ref<C>() => ref World.GetComponent<C>(this, Match.Plain);
+    public ref C Ref<C>()
+    {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
+        return ref World.GetComponent<C>(this, Match.Plain);
+    }
 
-    
-    
+
+
     /// <summary>
     /// Gets a reference to the Object Link Target of type <typeparamref name="L"/> for the entity.
     /// </summary>
@@ -90,7 +249,11 @@ internal record struct Id : IEquatable<object>
     /// <remarks>The reference may be left dangling if changes to the world are made after acquiring it. Use with caution.</remarks>
     /// <exception cref="ObjectDisposedException">If the Entity is not Alive..</exception>
     /// <exception cref="KeyNotFoundException">If no C or C(Target) exists in any of the World's tables for entity.</exception>
-    public ref L Ref<L>(Link<L> link) where L : class => ref World.GetComponent<L>(this, link);
+    public ref L Ref<L>(Link<L> link) where L : class
+    {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
+        return ref World.GetComponent<L>(this, link); 
+    }
 
 
     /// <inheritdoc />
@@ -100,6 +263,7 @@ internal record struct Id : IEquatable<object>
     /// <inheritdoc cref="Add{R}(R,fennecs.Entity)"/>
     public Entity Add<R>(R value, Entity relation) where R : notnull
     {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
         World.AddComponent(Identity, TypeExpression.Of<R>(relation), value);
         return this;
     }
@@ -121,6 +285,7 @@ internal record struct Id : IEquatable<object>
     /// <returns>Entity struct itself, allowing for method chaining.</returns>
     public Entity Add<T>(Link<T> link) where T : class
     {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
         World.AddComponent(Identity, TypeExpression.Of<T>(link), link.Target);
         return this;
     }
@@ -144,6 +309,7 @@ internal record struct Id : IEquatable<object>
     /// <returns>Entity struct itself, allowing for method chaining.</returns>
     public Entity Remove<C>() where C : notnull
     {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
         World.RemoveComponent(Identity, TypeExpression.Of<C>(Match.Plain));
         return this;
     }
@@ -157,6 +323,7 @@ internal record struct Id : IEquatable<object>
     /// <returns>Entity struct itself, allowing for method chaining.</returns>
     public Entity Remove<R>(Entity relation) where R : notnull
     {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
         World.RemoveComponent(Identity, TypeExpression.Of<R>(new Relate(relation)));
         return this;
     }
@@ -173,6 +340,7 @@ internal record struct Id : IEquatable<object>
     /// <returns>Entity struct itself, allowing for method chaining.</returns>
     public Entity Remove<T>(Link<T> link) where T : class
     {
+        Debug.Assert(Class == IdClass.Entity, $"Only Entities can have Components, this is a {Class}");
         World.RemoveComponent(Identity, link.TypeExpression);
         return this;
     }
@@ -248,7 +416,7 @@ internal record struct Id : IEquatable<object>
 
 }
 
-internal enum IdClass : short
+public enum IdClass : short
 {
     Entity = 1,
     None = default,
@@ -259,8 +427,29 @@ internal enum IdClass : short
     WildTarget = -400,
 }
 
+public record struct Wildcard(long value)
+{
+    public static Wildcard Any => new(-1);
+    public static Wildcard Object => new(-2);
+    public static Wildcard Entity => new(-3);
+    public static Wildcard Target => new(-4);
+}
+
+public record struct Relation(ulong value)
+{
+    public static Relation To(EntityNew target)
+    {
+        return new(target.value);
+    }
+    
+    public static Relation To(Wildcard target)
+    {
+        return new((ulong) target.value);
+    }
+}
+
 record struct Txpr
 {
     public TypeID type;
-    public Id target;
+    public EntityNew target;
 }

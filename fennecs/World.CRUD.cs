@@ -29,6 +29,32 @@ public partial class World
     }
 
 
+    internal void AddComponent<T>(EntityNew identity, TypeExpression typeExpression, T data) where T : notnull
+    {
+        if (data == null) throw new ArgumentNullException(nameof(data));
+
+        if (Mode == WorldMode.Deferred)
+        {
+            _deferredOperations.Enqueue(new DeferredOperation {Opcode = Opcode.Add, Identity = identity, TypeExpression = typeExpression, Data = data});
+            return;
+        }
+
+        AssertAlive(identity);
+
+        ref var meta = ref _meta[identity.index];
+        var oldArchetype = meta.Archetype;
+
+        if (oldArchetype.Signature.Matches(typeExpression)) throw new ArgumentException($"Entity {identity} already has a component of type {typeExpression}");
+
+        var newSignature = oldArchetype.Signature.Add(typeExpression);
+        var newArchetype = GetArchetype(newSignature);
+        Archetype.MoveEntry(meta.Row, oldArchetype, newArchetype);
+
+        // Back-fill the new value
+        newArchetype.BackFill(typeExpression, data, 1);
+    }
+
+
     internal void RemoveComponent(Identity identity, TypeExpression typeExpression)
     {
         if (Mode == WorldMode.Deferred)
