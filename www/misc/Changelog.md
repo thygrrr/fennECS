@@ -54,15 +54,16 @@ Here, there be ~~dragons~~ more foxes. *What did you expect?*
 ...
 
 ## Version 0.6.0-beta
-- `Stream<...>` has named elements in its constituent `ValueTuples`, this affects LINQ readability and boilerplate positively:
+- `Stream<...>` now provides named elements in its constituent `ValueTuples`, this improves LINQ readability and reduces boilerplate:
 
 ::: code-group
 ```csharp  [new api]
 var found = mystream.FirstOrDefault(x => x.comp0 > mousePosition).entity;
 ```
 ```csharp  [old api]
-var found1 = mystream.Where(((Entity, float pos) item) => item.pos > mousePosition).Select(item => item.Item1).FirstOrDefault();
-var found2 = mystream.FirstOrDefault(((Entity, float pos) item) => item.pos > mousePosition).Item1;
+var found1 = mystream.Where(((Entity, float pos) tuple) => tuple.pos > mousePosition).Select(tuple => tuple.Item1).FirstOrDefault();
+var found2 = mystream.FirstOrDefault(((Entity, float pos) tuple) => tuple.pos > mousePosition).Item1;
+var found3 = mystream.FirstOrDefault((tuple) => tuple.Item2 > mousePosition).Item1;
 ```
 
 :::

@@ -29,15 +29,6 @@ public class Match1Tests
     {
         var query = _world.Query<string>(Match.Any).Stream();
 
-        var e = _world.Spawn();
-        e.Add(e);
-        e.Add(123);
-        
-
-        var qs = _world.Query<float>().Stream();
-        var mouse = 10.0f;
-        var found3 = qs.FirstOrDefault(x => x.comp0 > mouse).entity;
-        
         HashSet<string> seen = [];
         query.For((ref string str) =>
         {

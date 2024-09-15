@@ -379,12 +379,6 @@ public record Stream<C0>(Query Query, Match Match0) : IEnumerable<(Entity entity
 
     #region Query Forwarding
     
-    /// <inheritdoc cref="fennecs.Query.Truncate"/>
-    public void Truncate(int targetSize, Query.TruncateMode mode = default)
-    {
-        Query.Truncate(targetSize, mode);
-    }
-    
     /// <inheritdoc cref="fennecs.Query.Despawn"/>
     public void Despawn()
     {
