@@ -42,18 +42,54 @@ head:
 Here, there be ~~dragons~~ more foxes. *What did you expect?*
 
 > [!CAUTION] BETA NOTICE
-> **fenn**ecs will remain in Beta until version 1.0.0, which is expected in Q4 2024. Breaking API changes as well as bugs are likely to occur without warning in these beta builds. 
+> **fenn**ecs will remain in Beta until version 1.0.0, which is expected in Q1 2025. Breaking API changes as well as bugs are likely to occur without warning in these beta builds. 
 > You are nonetheless encouraged to try **fenn**ecs out, play around and experiment with the package freely; our resident foxes aim to keep it it as useful and stable as possible! Please report issues and feedback on the [GitHub Issues](https://github.com/outfox/fennecs/issues) board.
 
 ## Upcoming Changes
 ### soon(tm)
 - `Match.Object` becomes internal / deprecated, use `Link.Any` instead.
-- `Stream` (a Stream View without any type parameters) will be added (so filtering without a component list feels less awkward)
+
 - `Has(params Comp[])` will be added to `QueryBuilders` to check for multiple components at once. (as well as `Any(params Comp[])`and `Not(params Comp[])`). These will be much more performant and low-allocation starting with .NET 9.0, and will use `Span<Comp>` in the future.
 - Breaking for `HasVirtual`, `GetVirtual`, adding `Match` expression support. (breaking means that the old methods will currently match Any, but the new versions will match Plain by default)
+- `Stream.Raw(EntitySpanAction action)` will be added to allow for processing all Entities in a Stream at maximum performance.
 ...
 
 ## Version 0.6.0-beta
+### Breaking Changes
+- There's now a hard limit of Worlds per Domain/Process.
+> *"256 Worlds should be enough for anyone!"*  
+> :neofox_flop_blep: ~ Fox Gates, circa 2024
+
+### Deprecations
+- `Comp<...>.Plain` is deprecated. Switch to using `Comp<T>.Data` and `Comp<T>.Data<K>` instead.
+
+### New Features
+- ✨Void Components!✨
+`Comp<T>.Tag` creates a Component of type T with no backing storage (zero size). This is better than using `Comp<T>.Plain` with 'zero' size, as the .NET Marshal would treat the latter as 1 byte, and moving it in memory isn't free. Type `T` won't store any data, so we recommend using empty structs for Tags.
+
+- ✨Keyed Components!✨ 
+`Comp<T>.Tag<K>(K key)` and `Comp<T>.Data<K>(K key)` create unique component Types for attaching to Entities or querying your World. They work similarly to Relations but use a Key based on the `GetHashCode` of the key parameter. Keys are strongly typed, so even if hashes match, there's no collision unless the Key Types are the same.
+
+::: info :neofox_blank: How is this different from Relations?
+Unlike Entity-Entity Relations that clean up when their target Entity is removed, Keys (based on a momentary hash code) don't expire if their "source" is destroyed. You can still remove or access all Keyed components by querying with appropriate Wildcards. This allows for soft relations by using an Entity as a Key.
+:::
+
+- Object Links now legally support re-seating (I'm such a fox! I turned a bug into a feature!)
+
+::: warning :neofox_confused: Are Keyed Components backed by a Class just Object Links?
+Almost! Object Links are a special shorthand using a Keyed Component under the hood. The Key Type is the same as the Backing Data type on creation and must be a reference type (class).
+
+Changing the `ref L` component data of an Entity with an Object Link won't affect the Component's Type Identity. This behaves like changing the Object (but not the Key) of a Keyed type.
+
+For swapping out Object Links for all holders, we recommend using a Batch Operation on an appropriate Query: remove the old Link, add the new Link, and submit the Batch.
+:::
+
+- Disposing a World returns it to the end of the pool of available Worlds, after despawning all Entities inside its archetypes. This *will clean up* cross-world relations.
+
+- Worlds can now be constructed with an explicit `byte worldIndex` parameter, allowing fine control over world creation order. (e.g. World 0 can become your client world, and World 1 your network/server world, etc.).
+
+- `Stream<...>` now provides named elements in its `ValueTuples`, improving LINQ readability and reducing boilerplate.
+
 - `Stream<...>` now provides named elements in its constituent `ValueTuples`, this improves LINQ readability and reduces boilerplate:
 
 ::: code-group
@@ -65,9 +101,18 @@ var found1 = mystream.Where(((Entity, float pos) tuple) => tuple.pos > mousePosi
 var found2 = mystream.FirstOrDefault(((Entity, float pos) tuple) => tuple.pos > mousePosition).Item1;
 var found3 = mystream.FirstOrDefault((tuple) => tuple.Item2 > mousePosition).Item1;
 ```
-
 :::
+- Fixed [Issue #20](https://github.com/outfox/fennecs/issues/20) `Stream<...>.Truncate(int)` has been removed (there was no semantically clear way implement it, and it was forwarding to the Underlying Query without applying filters). Instead, just use `Stream.Query.Truncate(int)` if you want to cut down on the number of entities in a Stream, but Filtering logic will not be applied (since it operates on the underlying Query, not the Stream). You can still use `Stream<...>.Despawn()` to Despawn all entities from the Stream according to its current filter state.
+- Entities now intrinsically know the World they belong to. This allows for safe Cross-World-Relations.
+- Entity structs now are just 64 bits (very tight).
+- Entity structs and (internal) Identity structs are now value-identical and have been unified.
 
+- `Stream` (a Stream View without any type parameters) has been added. This allows for Filtering bare Queries, and also exposes a few Runners, such as `Stream.For(EntityAction action)` and `Stream.For<in U>(U uniform, UniformEntityAction action)`. 
+- Some new Delegate Types for Streams and Entity Spawners, not all are used (yet):
+  - `EntityAction` - process one Entity
+  - `UniformEntityAction<in U>` - process one Entity with a uniform parameter
+  - `EntitySpanAction` - process a Span of Entities
+  - `UniformEntitySpanAction<in U>` - process a Span of Entities with a uniform parameter
 
 ## Version 0.5.10-beta
 - Added `bool Entity.HasVirtual(object)` extension method to `fennecs.reflection`

@@ -52,13 +52,18 @@ A `fennecs.World` is the root object that contains all your Entities, their Comp
 
 ::: details :neofox_magnify: BEHIND THE SCENES - Multiple Worlds
 
-Yes, you can have multiple of them. Instantiate to your heart's content!<br/>
-You usually only need one World... now go ... ... shoo!
+Yes, you can have up to 256 of them. Disposing a World returns it to the pool. Instantiate to your heart's content! You usually only need one World... now go ... ... shoo!
 
 ::: details DON'T SHOO ME!
+There are at least two traditional use cases for multiple worlds:
+- a Server/Network World and a Client World on the same machine
+- a world with few, highly dynamic Archetypes and many Queries and a world with a more static setup but maybe more Queries and Entities. Adding new Archetypes becomes more expensive the more cached Queries a world has, so splitting them up can be beneficial in some cases.
+
 Each World is a separate, isolated universe of Entities and Components, with its own set of Archetypes and Queries.
 
-Entities know their World, but Worlds don't know about each other. They're like parallel dimensions, each with its own set of rules and inhabitants. 
+Entities know their World, including Entities as parts of Relation Expressions. Cross-World relations are fully supported, and if an Entity Despawns, any Relations to it are automatically cleaned up.
+
+Other than that, Worlds don't know about each other. They're like parallel dimensions, each with its own set of rules and inhabitants.
 
 Entities can't move between Worlds *(yet)*, but copying them over by hand is easy enough.  
 (with some caveats in the [Random Tidbits](#random-tidbits-for-nerds) section)
@@ -66,7 +71,6 @@ Entities can't move between Worlds *(yet)*, but copying them over by hand is eas
 Multiple Worlds become useful when you want strict separation, e.g. for a Server World and a Client World on the same machine. They might also be useful if you want to re-use the same Query creation code with different rules. *(relevant for library authors)*
 
 In Worlds where lots of Archetypes or Queries are created and destroyed, it can also be beneficial to have separate worlds to keep the Query overhead of these operations low. *(we're talking many thousands or millions of operations here - don't prematurely optimize, profile your code and then make an informed decision!)*
-
 :::
 
 
@@ -152,11 +156,19 @@ Identiy stores an internal Generation number that prevents an Entity's successor
 ::: danger RELATIONS :neofox_astronaut: :neofox_astronaut_gun:
 *"Wait, it's all Identities? - Always has been!"*
 
-#### Entity-Entity relations currently **don't care or knw about other worlds.** 
+#### Entity-Entity relations **do care and know about other worlds.** 
 
-- Essentially it means your secondary keys are not unique across world boundaries. This is practically never a problem (we challenge you to even construct a scenario!). Either way, there's around 16 free bits in `Identity` reserved for these and other kinds of shenanigans in the future.
+- Essentially your Relation keys are unique across world boundaries, and if an Entity despawns, any Relations targeting it in any world are cleaned up accordingly (the components are removed from their respective Entities). 
 
-#### Entity-Object links work as expected.
+- Entities cannot automagically move between worlds yet, but when that feature comes, their Relations will be kept intact. You currently have to do all that housekeeping yourself if you need this functionality.
+
+#### Keyed Components don't care.
+
+Keys are just snapshots of momentary Hash values. This means if something has the same Hash and Type in multiple worlds, they will be considered the same key. 
+
+- Keys can trivially move between worlds if needed, they are just values; no cleanup is needed.
+
+#### Entity-Object links work as expected, too.
 - And yay! This is another one of their main uses, for example a Network Socket, Asset Provider, or Sound System might be a good candidate for an Object Link used by Entities in multiple Worlds.
 :::
 
