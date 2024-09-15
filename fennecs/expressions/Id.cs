@@ -375,7 +375,11 @@ public record struct Entity3
             Debug.Assert(value != default && Meta.Identity.Value == value, $"Entity {this} is not alive.");
             return value & TypeIdentity.TargetMask;
         }
-    } 
+    }
+
+    public static implicit operator Identity(Entity3 self) => self.Identity;
+
+    public Identity Identity => new(value);
 
     public Entity3(ulong Raw)
     {

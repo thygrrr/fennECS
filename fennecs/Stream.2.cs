@@ -9,7 +9,7 @@ namespace fennecs;
 /// <typeparam name="C1">stream type</typeparam>
 // ReSharper disable once NotAccessedPositionalProperty.Global
 public record Stream<C0, C1>(Query Query, Match Match0, Match Match1)
-    : Stream<C0>(Query, Match0), IEnumerable<(Entity, C0, C1)>
+    : Stream<C0>(Query, Match0), IEnumerable<(Entity entity, C0 comp0, C1 comp1)>
     where C0 : notnull
     where C1 : notnull
 {
@@ -275,7 +275,7 @@ public record Stream<C0, C1>(Query Query, Match Match0, Match Match1)
     #region IEnumerable
 
     /// <inheritdoc />
-    public new IEnumerator<(Entity, C0, C1)> GetEnumerator()
+    public new IEnumerator<(Entity entity, C0 comp0, C1 comp1)> GetEnumerator()
     {
         foreach (var table in Filtered)
         {

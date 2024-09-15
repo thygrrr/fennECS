@@ -53,6 +53,20 @@ Here, there be ~~dragons~~ more foxes. *What did you expect?*
 - Breaking for `HasVirtual`, `GetVirtual`, adding `Match` expression support. (breaking means that the old methods will currently match Any, but the new versions will match Plain by default)
 ...
 
+## Version 0.6.0-beta
+- `Stream<...>` has named elements in its constituent `ValueTuples`, this affects LINQ readability and boilerplate positively:
+
+::: code-group
+```csharp  [new api]
+var found = mystream.FirstOrDefault(x => x.comp0 > mousePosition).entity;
+```
+```csharp  [old api]
+var found1 = mystream.Where(((Entity, float pos) item) => item.pos > mousePosition).Select(item => item.Item1).FirstOrDefault();
+var found2 = mystream.FirstOrDefault(((Entity, float pos) item) => item.pos > mousePosition).Item1;
+```
+
+:::
+
 
 ## Version 0.5.10-beta
 - Added `bool Entity.HasVirtual(object)` extension method to `fennecs.reflection`

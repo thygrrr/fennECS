@@ -1,4 +1,6 @@
-﻿namespace fennecs;
+﻿using System.Diagnostics;
+
+namespace fennecs;
 
 public partial class World
 {
@@ -29,22 +31,22 @@ public partial class World
     }
 
 
-    internal void AddComponent<T>(EntityNew identity, TypeExpression typeExpression, T data) where T : notnull
+    internal void AddComponent<T>(Entity3 entity, TypeExpression typeExpression, T data) where T : notnull
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
 
         if (Mode == WorldMode.Deferred)
         {
-            _deferredOperations.Enqueue(new DeferredOperation {Opcode = Opcode.Add, Identity = identity, TypeExpression = typeExpression, Data = data});
+            _deferredOperations.Enqueue(new DeferredOperation {Opcode = Opcode.Add, Identity = entity, TypeExpression = typeExpression, Data = data});
             return;
         }
+        
+        AssertAlive(entity);
 
-        AssertAlive(identity);
-
-        ref var meta = ref _meta[identity.index];
+        ref var meta = ref _meta[entity.index];
         var oldArchetype = meta.Archetype;
 
-        if (oldArchetype.Signature.Matches(typeExpression)) throw new ArgumentException($"Entity {identity} already has a component of type {typeExpression}");
+        if (oldArchetype.Signature.Matches(typeExpression)) throw new ArgumentException($"Entity {entity} already has a component of type {typeExpression}");
 
         var newSignature = oldArchetype.Signature.Add(typeExpression);
         var newArchetype = GetArchetype(newSignature);

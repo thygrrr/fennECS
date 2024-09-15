@@ -254,6 +254,13 @@ public partial class World : Query
         throw new ObjectDisposedException($"Identity {identity} is no longer alive.");
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AssertAlive(Entity3 entity)
+    {
+        if (_meta[entity.index].Identity.Value == entity.value) return;
+        throw new ObjectDisposedException($"Identity {entity} is not alive in world {_index} ({Name}).");
+    }
+
     #endregion
 
 }
