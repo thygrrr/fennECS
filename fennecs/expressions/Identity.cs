@@ -19,7 +19,8 @@ public readonly record struct Identity : IComparable<Identity>
     [FieldOffset(4)] internal readonly TypeID Decoration;
 
     // ReSharper disable once UseSymbolAlias
-    [FieldOffset(6)] internal readonly short WorldId;
+    [FieldOffset(6)] internal readonly byte WorldId;
+    [FieldOffset(7)] internal readonly byte SubType;
     
     //Constituents for GetHashCode()
     [FieldOffset(0)] internal readonly uint DWordLow;

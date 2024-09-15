@@ -184,7 +184,7 @@ public partial class World : Query
 
     internal ref Meta GetEntityMeta(Identity identity) => ref _meta[identity.Index];
 
-    internal ref Meta GetEntityMeta(EntityNew identity) => ref _meta[identity.index];
+    internal ref Meta GetEntityMeta(Entity3 entity) => ref _meta[entity.index];
 
 
     private Archetype GetArchetype(Signature types)
