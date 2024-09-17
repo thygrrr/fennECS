@@ -220,7 +220,7 @@ public partial class World : IDisposable
     /// <param name="id">index of the world</param>
     /// <param name="world">the world, if found, or null</param>
     /// <returns>true if the world exists</returns>
-    public bool TryGet(byte id, [MaybeNullWhen(false)] out World world)
+    public static bool TryGet(byte id, [MaybeNullWhen(false)] out World world)
     {
         world = All[id];
         return world != null!;

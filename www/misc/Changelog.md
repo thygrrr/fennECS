@@ -47,6 +47,7 @@ Here, there be ~~dragons~~ more foxes. *What did you expect?*
 
 ## Upcoming Changes
 ### soon(tm)
+- Chunked Component Storage (global, or maybe each World may have its own chunk size)
 - `Match.Object` becomes internal / deprecated, use `Link.Any` instead.
 
 - `Has(params Comp[])` will be added to `QueryBuilders` to check for multiple components at once. (as well as `Any(params Comp[])`and `Not(params Comp[])`). These will be much more performant and low-allocation starting with .NET 9.0, and will use `Span<Comp>` in the future.

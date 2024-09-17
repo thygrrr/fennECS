@@ -72,11 +72,11 @@ public readonly record struct Entity : IAddRemoveComponent<Entity>, IHasComponen
     /// <remarks>The reference may be left dangling if changes to the world are made after acquiring it. Use with caution.</remarks>
     /// <exception cref="ObjectDisposedException">If the Entity is not Alive..</exception>
     /// <exception cref="KeyNotFoundException">If no C or C(Target) exists in any of the World's tables for entity.</exception>
-    public ref C Ref<C>(Match match) where C : struct => ref _world.GetComponent<C>(this, match);
+    public ref C Ref<C>(Match match) where C : struct => ref _world.GetComponent<C>(Id, match);
 
 
     /// <inheritdoc cref="Ref{C}(fennecs.Match)"/>
-    public ref C Ref<C>() => ref _world.GetComponent<C>(this, Match.Plain);
+    public ref C Ref<C>() => ref _world.GetComponent<C>(Id, Match.Plain);
 
     
     
@@ -89,7 +89,7 @@ public readonly record struct Entity : IAddRemoveComponent<Entity>, IHasComponen
     /// <remarks>The reference may be left dangling if changes to the world are made after acquiring it. Use with caution.</remarks>
     /// <exception cref="ObjectDisposedException">If the Entity is not Alive..</exception>
     /// <exception cref="KeyNotFoundException">If no C or C(Target) exists in any of the World's tables for entity.</exception>
-    public ref L Ref<L>(Link<L> link) where L : class => ref _world.GetComponent<L>(this, link);
+    public ref L Ref<L>(Link<L> link) where L : class => ref _world.GetComponent<L>(Id, link);
 
 
     /// <inheritdoc />
@@ -156,7 +156,7 @@ public readonly record struct Entity : IAddRemoveComponent<Entity>, IHasComponen
     /// <returns>Entity struct itself, allowing for method chaining.</returns>
     public Entity Remove<R>(Entity relation) where R : notnull
     {
-        _world.RemoveComponent(Id, TypeExpression.Of<R>(new Relate(relation)));
+        _world.RemoveComponent(Id, TypeExpression.Of<R>(new Relate(relation.Id)));
         return this;
     }
     
@@ -194,7 +194,7 @@ public readonly record struct Entity : IAddRemoveComponent<Entity>, IHasComponen
 
     
     /// <inheritdoc />
-    public bool Has<R>(Entity relation) where R : notnull => _world.HasComponent<R>(Id, new Relate(relation));
+    public bool Has<R>(Entity relation) where R : notnull => _world.HasComponent<R>(Id, new Relate(relation.Id));
 
     
     /// <inheritdoc />
@@ -247,6 +247,11 @@ public readonly record struct Entity : IAddRemoveComponent<Entity>, IHasComponen
 
 
     #region Cast Operators and IEquatable<Entity>
+
+    /// <summary>
+    /// Temporary implicit cast to Identity. (before types get fused)
+    /// </summary>
+    public static implicit operator Identity(Entity self) => self.Id;
 
     /// <summary>
     /// True if the Entity is alive in its world (and has a world).

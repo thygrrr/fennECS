@@ -7,17 +7,6 @@ namespace fennecs.tests;
 public class IdentityTests(ITestOutputHelper output)
 {
     [Fact]
-    public void Virtual_Entities_have_no_Successors()
-    {
-        Assert.Throws<InvalidOperationException>(() => new Identity(-1, -1, 0).Successor);
-        Assert.Throws<InvalidOperationException>(() => new Identity(-1, -4, 0).Successor);
-        Assert.Throws<InvalidOperationException>(() => new Identity(-1, -2, 0).Successor);
-        Assert.Throws<InvalidOperationException>(() => new Identity(-1, -3, 0).Successor);
-        Assert.Throws<InvalidOperationException>(() => default(Identity).Successor);
-    }
-
-
-    [Fact]
     public void Entity_Resolves_as_Type()
     {
         var entity = new Identity(123);

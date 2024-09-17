@@ -67,7 +67,7 @@ public partial class World : Query
 
     #region CRUD
 
-    private Identity NewEntity()
+    private Entity2 NewEntity()
     {
         lock (_spawnLock)
         {
@@ -80,11 +80,11 @@ public partial class World : Query
             _root.IdentityStorage.Append(identity);
             _root.Invalidate();
 
-            return identity;
+            return Entity2;
         }
     }
 
-    internal PooledList<Identity> SpawnBare(int count)
+    internal PooledList<Entity2> SpawnBare(int count)
     {
         lock (_spawnLock)
         {
@@ -106,7 +106,7 @@ public partial class World : Query
 
     private void DespawnImpl(Entity entity)
     {
-        AssertAlive(entity);
+        AssertAlive(entity.Id);
 
         if (Mode == WorldMode.Deferred)
         {
@@ -182,9 +182,7 @@ public partial class World : Query
     }
 
 
-    internal ref Meta GetEntityMeta(Identity identity) => ref _meta[identity.Index];
-
-    internal ref Meta GetEntityMeta(Entity3 entity) => ref _meta[entity.index];
+    internal ref Meta GetEntityMeta(Entity2 identity) => ref _meta[identity.Index];
 
 
     private Archetype GetArchetype(Signature types)
@@ -247,20 +245,11 @@ public partial class World : Query
     #region Assert Helpers
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AssertAlive(Identity identity)
+    private void AssertAlive(Identity entity)
     {
-        if (IsAlive(identity)) return;
-
-        throw new ObjectDisposedException($"Identity {identity} is no longer alive.");
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AssertAlive(Entity3 entity)
-    {
-        if (_meta[entity.index].Identity.Value == entity.value) return;
+        if (_meta[entity.Index].Identity.raw == entity.raw) return;
         throw new ObjectDisposedException($"Identity {entity} is not alive in {this}.");
     }
-
     #endregion
 
 }

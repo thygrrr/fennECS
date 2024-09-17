@@ -1,11 +1,11 @@
 ﻿namespace fennecs.pools;
 
-internal class IdentityPool
+internal class IdentityPool //TODO: Rename Entity2Pool
 {
     internal int Created => _created;
     internal int Count => _created - _recycled.Count;
 
-    private readonly Queue<Identity> _recycled;
+    private readonly Queue<Entity2> _recycled;
     private int _created;
     
     private readonly byte _worldIndex;
@@ -15,25 +15,25 @@ internal class IdentityPool
         _worldIndex = worldIndex;
         
         _recycled = new(initialCapacity * 2);
-        for (var i = 0; i < initialCapacity; i++)
+        for (var index = 0; index < initialCapacity; index++)
         {
-            _recycled.Enqueue(new(_worldIndex, ++_created, 1));
+            _recycled.Enqueue(new(_worldIndex, index));
         }
     }
 
 
-    internal Identity Spawn()
+    internal Entity2 Spawn()
     {
-        if (_recycled.TryDequeue(out var recycledIdentity)) return recycledIdentity;
+        if (_recycled.TryDequeue(out var recycledEntity2)) return recycledEntity2;
 
         var newIndex = Interlocked.Increment(ref _created);
-        return new(_worldIndex, newIndex, 1);
+        return new(_worldIndex, newIndex);
     }
 
 
-    internal PooledList<Identity> Spawn(int requested)
+    internal PooledList<Entity2> Spawn(int requested)
     {
-        var identities = PooledList<Identity>.Rent();
+        var identities = PooledList<Entity2>.Rent();
         var recycled = _recycled.Count;
 
         if (recycled <= requested)
@@ -45,7 +45,7 @@ internal class IdentityPool
             // If we don't have enough recycled Identities, create more.
             for (var i = 0; i < requested - recycled; i++)
             {
-                identities.Add(new(_worldIndex, ++_created, 1));
+                identities.Add(new(_worldIndex, Interlocked.Increment(ref _created)));
             }
         }
         else
@@ -62,13 +62,13 @@ internal class IdentityPool
     }
 
 
-    internal void Recycle(Identity identity)
+    internal void Recycle(Entity2 entity)
     {
-        _recycled.Enqueue(identity.Successor);
+        _recycled.Enqueue(entity.Successor);
     }
 
-    internal void Recycle(ReadOnlySpan<Identity> toDelete)
+    internal void Recycle(ReadOnlySpan<Entity2> toDelete)
     {
-        foreach (var identity in toDelete) Recycle(identity);
+        foreach (var entity in toDelete) Recycle(entity);
     }
 }

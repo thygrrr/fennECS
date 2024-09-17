@@ -37,9 +37,9 @@ public class StructLayout
 #pragma warning restore CS0675 // Bitwise-or operator used on a sign-extended operand
         }
         
-        public StorageKind kind
+        public Kind kind
         {
-            get => (StorageKind)((raw & 0xF0000000u) >> 28);
+            get => (Kind)((raw & 0xF0000000u) >> 28);
             set => raw = ((ulong) value & 0xF) << 28;
         }
 
@@ -62,9 +62,9 @@ public class StructLayout
         [FieldOffset(6)]
         public short header;
         
-        public StorageKind kind
+        public Kind kind
         {
-            get => (StorageKind)((_raw & 0xF0000000u) >> 28);
+            get => (Kind)((_raw & 0xF0000000u) >> 28);
             set => _raw = ((ulong) value & 0xF) << 28;
         }
         

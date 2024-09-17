@@ -4,12 +4,13 @@ using System.Runtime.InteropServices;
 
 namespace fennecs;
 
+/*
 /// <summary>
 /// Refers to an identity:
 /// real Entity, tracked object, or virtual concept (e.g. any/none Match Expression).
 /// </summary>
 [StructLayout(LayoutKind.Explicit)]
-public readonly record struct Identity : IComparable<Identity>
+public readonly record struct IdentityOld : IComparable<Identity>
 {
     [FieldOffset(0)] internal readonly ulong Value;
 
@@ -71,7 +72,7 @@ public readonly record struct Identity : IComparable<Identity>
     /// </summary>
     /// <param name="entity">an Entity</param>
     /// <returns>the Identity</returns>
-    public static implicit operator Identity(Entity entity) => entity.Id;
+    public static implicit operator IdentityOld(Entity entity) => entity.Id;
     
 
     /// <inheritdoc />
@@ -229,3 +230,4 @@ public readonly record struct Identity : IComparable<Identity>
     
     #endregion
 }
+*/
