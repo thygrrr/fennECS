@@ -1,14 +1,82 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace fennecs;
 
+public readonly record struct KeyExpression
+{
+    internal readonly ulong Raw;
+
+    /// <summary>
+    /// Plain, Non-Relation Component
+    /// </summary>
+    public KeyExpression(Primary primary)
+    {
+        Raw = primary.Raw;
+    }
+    
+    public KeyExpression(Primary primary, Secondary secondary)
+    {
+        Raw = primary.Raw | secondary.raw;
+    }
+
+    public KeyExpression(Primary primary, Entity entity)
+    {
+        Raw = primary.Raw | entity.living;
+    }
+}
+
+public struct Range<T>
+{
+    public T Min;
+    public T Max;
+}
+
+/// <summary>
+/// Primary Key of a TypeExpression used to identify a specific type of component in an Archetype Signature and Storage.
+/// </summary>
+/// <remarks>
+/// Lives in the top 16 bits of a TypeIdentity. 12 of these are the associated LanguageType.
+/// </remarks>
+public readonly record struct Primary
+{
+    internal readonly ulong Raw;
+
+    public static Primary Void<T>() => new((ulong) Kind.Void | (ulong) LanguageType<T>.Id << 48);
+    public static Primary Data<T>() => new((ulong) Kind.Data | (ulong) LanguageType<T>.Id << 48);
+    public static Primary Same<T>() => new((ulong) Kind.Same | (ulong) LanguageType<T>.Id << 48);
+
+    
+    public Primary(ulong raw)
+    {
+        Debug.Assert((raw & TypeIdentity.HeaderMask) != 0, "MainType must have a header.");
+        Debug.Assert((raw & TypeIdentity.SubMask) == 0, "MainType must not have Subtype bits set.");
+        Raw = raw & TypeIdentity.HeaderMask;
+    }
+}
+
+
+
+/// <summary>
+/// Part of a TypeExpression used to identify a specific type of Secondary Key target in a TypeExpression.
+/// </summary>
+public readonly record struct SubType
+{
+    internal readonly ulong Raw;
+    
+    public SubType(ulong raw)
+    {
+        Debug.Assert((raw & TypeIdentity.HeaderMask) == 0, "SubType must not have a header.");
+        Debug.Assert((raw & TypeIdentity.SubMask) != 0, "SubType must have Subtype bits set.");
+        Raw = raw & TypeIdentity.SubMask;
+    }
+}
+
+
 internal static class LTypeHelper
 {
     public static ulong Sub<T>() => (ulong)LanguageType<T>.Id << 32;
-
-    public static Type Resolve(ulong type) => LanguageType.Resolve((TypeID)((type & TypeIdentity.TypeMask) >> 48));
-
     public static Type SubResolve(ulong type) => LanguageType.Resolve((TypeID)((type & TypeIdentity.SubMask) >> 32));
 }
 
@@ -108,26 +176,19 @@ internal readonly record struct TypeIdentity(ulong raw)
 
 public enum Kind : ulong
 {
-    None      = 0x0000_0000_0000_0000ul, // No Type
-    Void      = 0x1000_0000_0000_0000ul, // Future: Comp<T>.Tag, Comp<T>.Tag<K> - Tags and other 0-size components, saving storage and migration costs.
-    Data      = 0x2000_0000_0000_0000ul, // Data Components (Comp<T>.Plain and Comp<T>.Keyed<K> and Comp<T>.Link(T))
-    Unique    = 0x3000_0000_0000_0000ul, // Singleton Components (Comp<T>.Unique / future Comp<T>.Link(T))
+    None = 0x0000_0000_0000_0000ul, // No Type
+    Void = 0x1000_0000_0000_0000ul, // Future: Comp<T>.Tag, Comp<T>.Tag<K> - Tags and other 0-size components, saving storage and migration costs.
+    Data = 0x2000_0000_0000_0000ul, // Data Components (Comp<T>.Plain and Comp<T>.Keyed<K> and Comp<T>.Link(T))
+    Same = 0x3000_0000_0000_0000ul, // Singleton Components (Comp<T>.Unique / future Comp<T>.Link(T))
 
-    //Spatial1D = 0x4000_0000_0000_0000ul, // Future: 1D Spatial Components
-    //Spatial2D = 0x5000_0000_0000_0000ul, // Future: 2D Spatial Components
-    //Spatial3D = 0x6000_0000_0000_0000ul, // Future: 3D Spatial Components
+    Spatial1D = 0x4000_0000_0000_0000ul, // Future: 1D Spatial Components
+    Spatial2D = 0x5000_0000_0000_0000ul, // Future: 2D Spatial Components
+    Spatial3D = 0x6000_0000_0000_0000ul, // Future: 3D Spatial Components
     
-    WildVoid      = 0x8000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-    WildData      = 0x9000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-    WildUnique    = 0xA000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-
-    //WildSpatial1D = 0xC000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-    //WildSpatial2D = 0xD000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-    //WildSpatial3D = 0xE000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
-
     Any           = 0xF000_0000_0000_0000ul, // Wildcard, details in bottom 32 bits.
 
     Mask          = TypeIdentity.StorageMask, // Internal Use
+    Share
 }
 
 [Flags]
@@ -155,29 +216,29 @@ internal enum EntityFlags : ulong
 
 
 [StructLayout(LayoutKind.Explicit)]
-public record struct ObjectLink
+public readonly record struct ObjectLink
 {
     [FieldOffset(0)]
-    public ulong raw;
+    internal readonly ulong Raw;
 
     [FieldOffset(0)]
     public int hash;
     
-    public ObjectLink(ulong Raw)
+    public ObjectLink(ulong raw)
     {
         Debug.Assert((Raw & TypeIdentity.HeaderMask) == 0, "ObjectLink must not have a header.");
         Debug.Assert((Raw & TypeIdentity.KeyTypeMask) == (ulong) Key.Object, "ObjectLink must have a Category.Object");
-        raw = Raw;
+        Raw = raw;
     }
     
-    public Type type => LTypeHelper.SubResolve(raw);
+    public Type type => LTypeHelper.SubResolve(Raw);
 
     /// <inheritdoc />
     public override string ToString() => $"O-<{type}>-{hash:x8}";
     
     public override int GetHashCode() => hash;
     
-    internal Id id => new(raw);
+    internal Id id => new(Raw);
     
     internal static Id Of<T>(T obj) where T : class => new((ulong) Key.Object | LTypeHelper.Sub<T>() | (uint) obj.GetHashCode());
 }
@@ -479,7 +540,7 @@ public record struct Entity : IComparable<Entity>
 
 
 [StructLayout(LayoutKind.Explicit)]
-public readonly record struct Hash
+public readonly record struct Secondary
 {
     [FieldOffset(0)]
     public readonly ulong raw;
@@ -487,14 +548,14 @@ public readonly record struct Hash
     [FieldOffset(0)]
     private readonly int hash;
     
-    internal Hash(ulong value)
+    internal Secondary(ulong value)
     {
         Debug.Assert((value & TypeIdentity.HeaderMask) == 0, "KeyExpression must not have a header.");
         Debug.Assert((value & TypeIdentity.KeyTypeMask) == (ulong) Key.Hash, "KeyExpression is not of Category.Key.");
         raw = value;
     }
 
-    public Hash Of<K>(K key) where K : notnull => new((ulong) Key.Hash | LTypeHelper.Sub<K>() | (uint) key.GetHashCode());
+    public Secondary Of<K>(K key) where K : notnull => new((ulong) Key.Hash | LTypeHelper.Sub<K>() | (uint) key.GetHashCode());
 
     private Type type => LTypeHelper.SubResolve(raw);
     
@@ -549,7 +610,7 @@ internal readonly record struct Id : IComparable<Id>
             Key.None => $"None",
             Key.Entity => new Entity(_value).ToString(),
             Key.Object => new ObjectLink(_value).ToString(),
-            Key.Hash => new Hash(_value).ToString(),
+            Key.Hash => new Secondary(_value).ToString(),
             _ => $"?-{_value:x16}", 
         };
     }
