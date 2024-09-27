@@ -122,6 +122,11 @@ var found3 = mystream.FirstOrDefault((tuple) => tuple.Item2 > mousePosition).Ite
   - `EntitySpanAction` - process a Span of Entities
   - `UniformEntitySpanAction<in U>` - process a Span of Entities with a uniform parameter
 
+
+## Version 0.5.11-beta
+- Fixed [Issue #23](https://github.com/outfox/fennecs/issues/23) Data Integrity Issue Following Despawn. Thanks to [Penny](https://github.com/PennyMew) for the Issue and PR to fix it!
+- Fixed [Issue #21](https://github.com/outfox/fennecs/issues/21) Streams Documentation [Example](https://fennecs.tech/docs/Streams/) was mixed up.
+
 ## Version 0.5.10-beta
 - Added `bool Entity.HasVirtual(object)` extension method to `fennecs.reflection`
 - Fixed [Issue #17](https://github.com/outfox/fennecs/issues/17) Entities that have self-referencing relations on themselves can now be despawned and bulk-despawned without crashing / potentially undefined behaviour.
