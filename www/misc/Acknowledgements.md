@@ -27,3 +27,6 @@ Neofox is in the Creative Commons [CC BY-NC-SA 4.0](https://creativecommons.org/
 ## n00t
 Thanks to n00t on the [Godot Discord](https://discord.com/invite/4JBkykG) for suggesting to make the cubes in the [Cubes](../examples/Cubes.md) example occasionally arrangeinto a sphere. That, and for the much, much less impactful deed of suggesting [VitePress](https://vitepress.dev/), the amazing SSG this site was made with.
 
+## Penny
+Thanks to Penny for [fixing an issue](https://github.com/outfox/fennecs/issues/23) with the [Despawn](https://fennecs.tech/docs/Entities/CRUD.md#despawning-entities) API, and for the PR to fix it!
+

@@ -1,12 +1,14 @@
 ---
-title: Relations
-order: 10
+title: Relation (Entity)
+order: 1
 ---
 # Relations between Entities
 
+When a component type references another Entity as its secondary key, it is called a ***Relation***..
+
 **fenn**ecs allows component attachment to entities reference an additional `Entity`, the relation target. This relation becomes part of the Key that is used to group Entities into an Archetype.
 
-The relation is said to be ***backed by a Component type***, and any data can be stored in it. The relation is a `secondary key` on top top of the normal matching logic that **fenn**ecs performs.
+The relation is said to be ***backed by its Component type***, and any data can be stored in it. The relation is a `secondary key` on top top of the normal matching logic that **fenn**ecs performs.
 
 ::: info 🦋 IS THIS BI-ERASURE?
 Relations are **unidirectional**, so the Target doesn't "know" it is being related to.

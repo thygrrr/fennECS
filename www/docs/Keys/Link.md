@@ -1,6 +1,6 @@
 ---
-title: Links
-order: 11
+title: Link (Object)
+order: 12
 ---
 # Object Links
 
@@ -55,7 +55,7 @@ var unbankedEntities = world
     .Compile();
         
 // Wildcard target, specific exclusion, stream filter
-var entitiseExceptCustomersOfChase = world
+var ent (itiseExceptCustomersOfChase = world
     .Query<Bank>(Link.Any)
     .Stream() with // do this on-the-fly where needed
     {
