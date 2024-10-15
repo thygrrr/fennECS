@@ -44,13 +44,6 @@ public readonly record struct Link<T> where T : class
     /// </summary>
     public static implicit operator Link<T>(T self) => new() {Object = self};
 
-    /// <summary>
-    /// Implicit conversion from Link to generic Target.
-    /// </summary>
-    public static implicit operator Match(Link<T> self)
-    {
-        return new(Identity.Of(self.Object));
-    }
    
     /// <inheritdoc />
     public override string ToString() => $"Link {TypeExpression} -> {Object?.ToString() ?? "null"}";

@@ -166,7 +166,8 @@ public readonly struct Batch : IDisposable, IAddRemoveComponent<Batch>
         /// </summary>
         Allow,
     }
-
+    
+    
     #endregion
 
 

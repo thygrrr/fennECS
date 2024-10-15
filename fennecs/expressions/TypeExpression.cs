@@ -172,7 +172,7 @@ internal readonly record struct TypeExpression : IComparable<TypeExpression>
     /// <typeparam name="T">The backing type for which to generate the expression.</typeparam>
     /// <param name="match">The target entity, with a default of <see cref="fennecs.Identity.Plain"/>, specifically NO target.</param>
     /// <returns>A new <see cref="TypeExpression"/> struct instance, configured according to the specified type and target.</returns>
-    public static TypeExpression Of<T>(Match match) => new(match.Value, LanguageType<T>.Id, LanguageType.FlagsOf<T>());
+    public static TypeExpression Of<T>(Match match) => new(match.SecondaryKind, LanguageType<T>.Id, LanguageType.FlagsOf<T>());
 
 
     /// <summary>
@@ -197,7 +197,7 @@ internal readonly record struct TypeExpression : IComparable<TypeExpression>
     /// <param name="type">The Component type.</param>
     /// <param name="match">The target entity, with a default of <see cref="fennecs.Identity.Plain"/>, specifically NO target.</param>
     /// <returns>A new <see cref="TypeExpression"/> struct instance, configured according to the specified type and target.</returns>
-    public static TypeExpression Of(Type type, Match match) => new(match.Value, LanguageType.Identify(type), LanguageType.Flags(type));
+    public static TypeExpression Of(Type type, Match match) => new(match.SecondaryKind, LanguageType.Identify(type), LanguageType.Flags(type));
 
 
     /// <inheritdoc cref="object.ToString"/>

@@ -9,9 +9,9 @@
 /// </para>
 public readonly record struct Match 
 {
-    internal Identity Value { get; }
+    internal SecondaryKind SecondaryKind { get; }
     
-    internal Match(Identity Value) => this.Value = Value;
+    internal Match(SecondaryKind SecondaryKind) => this.SecondaryKind = SecondaryKind;
 
     /// <summary>
     /// <para>
@@ -19,7 +19,7 @@ public readonly record struct Match
     /// </para>
     /// <para>Use it freely in filter expressions. See <see cref="QueryBuilder"/> for how to apply it in queries.</para>
     /// </summary>
-    public static Match Relation(Entity other) => new(other.Id);
+    public static Match Relation(Entity other) => new(other.SecondaryKind);
     
     /// <summary>
     /// <para>
@@ -27,7 +27,7 @@ public readonly record struct Match
     /// </para>
     /// <para>Use it freely in filter expressions. See <see cref="QueryBuilder"/> for how to apply it in queries.</para>
     /// </summary>
-    public static Match Link<T>(T link) where T : class => new(ObjectLink.Of(link));
+    public static Match Link<T>(T link) where T : class => new();
 
     /// <summary>
     /// <para><b>Wildcard match expression for Entity iteration.</b><br/>This matches all types of relations on the given Stream Type: <b>Plain, Entity, and Object</b>.
@@ -51,7 +51,7 @@ public readonly record struct Match
     /// <li>Use wildcards deliberately and sparingly.</li>
     /// </ul>
     /// </remarks>
-    public static Match Any => new(Identity.Any); // or prefer default ?
+    public static Match Any => new(SecondaryKind.Any); // or prefer default ?
 
     /// <summary>
     /// <b>Wildcard match expression for Entity iteration.</b><br/>Matches any non-plain Components of the given Stream Type, i.e. any with a <see cref="TypeExpression.Match"/>.
@@ -60,7 +60,7 @@ public readonly record struct Match
     /// <para>Applying this to a Query's Stream Type can result in multiple iterations over entities if they match multiple component types. This is due to the wildcard's nature of matching all components.</para>
     /// </summary>
     /// <inheritdoc cref="Any"/>
-    public static Match Target => new(Identity.Target);
+    public static Match Target => new(SecondaryKind.Target);
     
     /// <summary>
     /// <para>Wildcard match expression for Entity iteration. <br/>This matches all <b>Entity-Object</b> Links of the given Stream Type.
@@ -71,7 +71,7 @@ public readonly record struct Match
     /// <para>Applying this to a Query's Stream Type can result in multiple iterations over entities if they match multiple component types. This is due to the wildcard's nature of matching all components.</para>
     /// </summary>
     /// <inheritdoc cref="Any"/>
-    public static Match Object => new(Identity.Object);
+    public static Match Object => new(SecondaryKind.Object);
 
     /// <summary>
     /// <para><b>Wildcard match expression for Entity iteration.</b><br/>This matches all <b>Entity-Entity</b> Relations of the given Stream Type.
@@ -81,7 +81,7 @@ public readonly record struct Match
     /// <para>Applying this to a Query's Stream Type can result in multiple iterations over entities if they match multiple component types. This is due to the wildcard's nature of matching all components.</para>
     /// </summary>
     /// <inheritdoc cref="Any"/>
-    public static Match Entity => new(Identity.Entity);
+    public static Match Entity => new(SecondaryKind.Entity);
 
 
     /// <summary>
@@ -92,7 +92,7 @@ public readonly record struct Match
     /// <para>This expression does not result in multiple enumeration, because it's not technically a Wildcard - there can only be one plain component per type on an Entity.</para>
     /// </summary>
     /// <inheritdoc cref="Plain"/>
-    public static Match Plain => new(Identity.Plain);
+    public static Match Plain => new(SecondaryKind.None);
     
 
     /// <summary>
@@ -101,16 +101,8 @@ public readonly record struct Match
     /// <param name="value"></param>
     /// <returns></returns>
     //public static implicit operator Match(Identity value) => new(value);
-    public static implicit operator Match(Entity value) => new(value);
-
-    //public static implicit operator Match(Identity value) => new(value);
+    public static implicit operator Match(Entity value) => new(value.SecondaryKind);
     
-    //TODO Maybe not even needed...
-    internal bool IsWildcard => Value.IsWildcard;
-    internal bool IsEntity => Value.IsEntity;
-    internal bool IsObject => Value.IsObject;
-
-
     /// <inheritdoc/>
-    public override string ToString() => Value.ToString();
+    public override string ToString() => SecondaryKind.ToString();
 }
