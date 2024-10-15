@@ -9,7 +9,8 @@ namespace fennecs;
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
 internal class LanguageType
 {
-    internal protected static Type Resolve(TypeID typeId) => Types[typeId];
+    protected internal static Type Resolve(TypeID typeId) => Types[typeId];
+    public static Type SubResolve(ulong type) => Resolve((TypeID)((type & TypeIdentity.SubMask) >> 32));
 
     // Shared ID counter
     protected static TypeID Counter;
@@ -20,7 +21,7 @@ internal class LanguageType
     protected static readonly object RegistryLock = new();
 
 
-    internal protected static TypeID Identify(Type type)
+    protected internal static TypeID Identify(Type type)
     {
         // Query the registry directly for a fast response.
         if (Ids.TryGetValue(type, out var id)) return id;
@@ -102,10 +103,6 @@ internal class LanguageType<T> : LanguageType
             Ids.TryAdd(typeof(T), Id);
         }
     }
-
-
-    //FIXME: This collides with certain Entity types and generations.
-    public static TypeID TargetId => (TypeID)(-Id);
 }
 
 internal static class TypeFlagExtensions
