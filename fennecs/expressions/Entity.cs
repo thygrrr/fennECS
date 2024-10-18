@@ -8,10 +8,8 @@ public record struct Entity : IComparable<Entity>
 {
     internal Primary Primary => new(raw);
 
-    public Type type => typeof(Entity);
-
     [FieldOffset(0)]
-    public ulong raw;
+    internal ulong raw;
 
     [FieldOffset(0)]
     internal int Index;
@@ -23,8 +21,6 @@ public record struct Entity : IComparable<Entity>
     internal ushort Generation;
 
     internal EntityFlags Flags => (EntityFlags)(raw & (ulong)EntityFlags.Mask);
-
-    internal SecondaryKind SecondaryKind => (SecondaryKind)(raw & (ulong)SecondaryKind.Mask);
 
     internal Entity Successor
     {
@@ -54,14 +50,14 @@ public record struct Entity : IComparable<Entity>
         this.raw = raw;
         Debug.Assert((raw & TypeIdentity.KeyTypeMask) == (ulong)SecondaryKind.Entity, "Identity is not of Category.Entity.");
         Debug.Assert(World.TryGet(_world, out var world), $"World {_world} does not exist.");
-        Debug.Assert(Alive, "Entity is not alive.");
+        Debug.Assert(world.IsAlive(this), "Entity is not alive.");
     }
 
     
     /// <summary>
     /// Match Expression matching relations targeting this Entity.
     /// </summary>
-    public static implicit operator Match(Entity entity) => new(entity.SecondaryKind);
+    public static implicit operator Match(Entity entity) => new(entity.raw & (ulong) SecondaryKind.Mask);
 
     
     /// <summary>
@@ -276,7 +272,7 @@ public record struct Entity : IComparable<Entity>
     #region Cast Operators and IEquatable<EntityOld>
 
     /// <inheritdoc />
-    public bool Equals(Entity other) => raw == other.raw;
+    public bool Equals(Entity other) => raw == other.raw || raw == other.living;
 
 
     /// <inheritdoc />
@@ -309,8 +305,6 @@ public record struct Entity : IComparable<Entity>
 
     #endregion
 }
-
-
 [Flags]
 internal enum EntityFlags : ulong
 {

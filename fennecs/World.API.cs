@@ -132,19 +132,20 @@ public partial class World : IDisposable
     /// <param name="entity">the entity to despawn.</param>
     public void Despawn(Entity entity) => DespawnImpl(entity);
 
+    
 
     /// <summary>
     /// Checks if the entity is alive (was not despawned).
     /// </summary>
-    /// <param name="identity">an Entity</param>
+    /// <param name="entity">an Entity</param>
     /// <returns>true if the Entity is Alive, false if it was previously Despawned</returns>
-    internal bool IsAlive(Entity identity)
+    internal bool IsAlive(Entity entity)
     {
-        return identity.Index >= 0
-        && identity.Index < _meta.Length
-        && identity == _meta[identity.Index].Entity;
+        return entity.Index >= 0
+               && entity.Index < _meta.Length
+               && entity == _meta[entity.Index].Entity;
     }
-    
+
 
 
     /// <summary>

@@ -78,7 +78,7 @@ internal readonly record struct TypeIdentity(ulong raw)
     {
         get
         {
-            Debug.Assert(SecondaryKindType is SecondaryKind.Hash or SecondaryKind.Object or SecondaryKind.Entity or SecondaryKind.Target, $"This TypeIdentity has no SubType, it's pointing to {SecondaryKindType}");
+            Debug.Assert(SecondaryKindType is SecondaryKind.Family or SecondaryKind.Object or SecondaryKind.Entity or SecondaryKind.Target, $"This TypeIdentity has no SubType, it's pointing to {SecondaryKindType}");
             return SecondaryKindType == SecondaryKind.Entity ? typeof(Entity) : LTypeHelper.SubResolve(raw);
         }
     }

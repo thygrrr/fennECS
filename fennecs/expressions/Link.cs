@@ -44,6 +44,11 @@ public readonly record struct Link<T> where T : class
     /// </summary>
     public static implicit operator Link<T>(T self) => new() {Object = self};
 
+    /// <summary>
+    /// Implicit conversion from Object to Match.
+    /// </summary>
+    public static implicit operator Match(Link<T> self) => self.TypeExpression.Match;
+
    
     /// <inheritdoc />
     public override string ToString() => $"Link {TypeExpression} -> {Object?.ToString() ?? "null"}";

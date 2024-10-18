@@ -34,25 +34,28 @@ internal enum SecondaryKind : ulong
     Data = 0x0000_1000_0000_0000ul,
     Entity = 0x0000_2000_0000_0000ul,
     Object = 0x0000_4000_0000_0000ul,
-    Hash = 0x0000_8000_0000_0000ul,
+    Family = 0x0000_8000_0000_0000ul,
 
-    Target = Entity | Object | Hash,
-    Any = Data | Entity | Object | Hash,
+    Target = Entity | Object | Family,
+    Any = Data | Entity | Object | Family,
 
     Mask = 0x0000_F000_0000_0000ul,
 }
 
 
+/// <summary>
+/// Object Links are secondary Keys that are backed by an Object, where the Key is the hash code of the object.
+/// </summary>
 [StructLayout(LayoutKind.Explicit)]
 public record struct ObjectLink
 {
     [FieldOffset(0)]
-    public ulong raw;
+    internal ulong raw;
 
     [FieldOffset(0)]
-    public int hash;
+    internal int hash;
 
-    public ObjectLink(ulong raw)
+    internal ObjectLink(ulong raw)
     {
         Debug.Assert((raw & TypeIdentity.HeaderMask) == 0, "ObjectLink must not have a header.");
         Debug.Assert((raw & TypeIdentity.KeyTypeMask) == (ulong)SecondaryKind.Object, "ObjectLink must have a Category.Object");
@@ -63,7 +66,8 @@ public record struct ObjectLink
 
     /// <inheritdoc />
     public override string ToString() => $"O-<{type}>-{hash:x8}";
-
+    
+    /// <inheritdoc />
     public override int GetHashCode() => hash;
 
     internal Primary Primary => new(raw);
@@ -71,36 +75,45 @@ public record struct ObjectLink
     internal static Primary Of<T>(T obj) where T : class => new((ulong)SecondaryKind.Object | LTypeHelper.Sub<T>() | (uint)obj.GetHashCode());
 }
 
+
+/// <summary>
+/// Hashes are secondary Keys that are derived from a provided value, annotated with the type of the value.
+/// </summary>
+/// <remarks>
+/// Entities are grouped into families (archetypes) by these Hash keys.
+/// </remarks>
 [StructLayout(LayoutKind.Explicit)]
-public readonly record struct Hash
+public readonly record struct Family
 {
     [FieldOffset(0)]
-    public readonly ulong raw;
+    internal readonly ulong raw;
 
     [FieldOffset(0)]
-    private readonly int hash;
+    internal readonly int hash;
 
-    internal Hash(ulong value)
+    internal Family(ulong value)
     {
         Debug.Assert((value & TypeIdentity.HeaderMask) == 0, "KeyExpression must not have a header.");
-        Debug.Assert((value & TypeIdentity.KeyTypeMask) == (ulong)SecondaryKind.Hash, "KeyExpression is not of Category.Key.");
+        Debug.Assert((value & TypeIdentity.KeyTypeMask) == (ulong)SecondaryKind.Family, "KeyExpression is not of Category.Key.");
         raw = value;
     }
 
-    public Hash Of<K>(K key) where K : notnull => new((ulong)SecondaryKind.Hash | LTypeHelper.Sub<K>() | (uint)key.GetHashCode());
+    /// <summary>
+    /// Create a Family expression for the given family, whose value is based on the result of <see cref="GetHashCode"/> of the family.
+    /// </summary>
+    public static Family Of<F>(F family) where F : notnull => new((ulong)SecondaryKind.Family | LTypeHelper.Sub<F>() | (uint) family.GetHashCode());
 
     private Type type => LTypeHelper.SubResolve(raw);
 
-    internal Primary Primary => new(raw);
-
     /// <inheritdoc />
-    public override string ToString() => $"H<{type}>-{hash:x8}";
+    public override string ToString() => $"F<{type}>-{hash:x8}";
 }
+
 
 internal readonly record struct Relate
 {
     public readonly ulong raw;
-
+    
     internal Relate(ulong value)
     {
         Debug.Assert((value & TypeIdentity.HeaderMask) == 0, "RelationExpression must not have a header.");
@@ -109,9 +122,16 @@ internal readonly record struct Relate
         raw = value;
     }
 
-    public static Relate To(Entity entity) => new(entity.living);
+    internal Relate(Entity target)
+    {
+        Debug.Assert(target.Alive, "Relation target is not alive.");
+        raw = target.living;
+    }
 
-    internal Primary Primary => new(raw);
+    /// <summary>
+    /// Create a Relation expression to the Target entity.
+    /// </summary>
+    public static Relate To(Entity entity) => new(entity.living);
 
     internal Entity target => new(raw);
 }
@@ -140,7 +160,7 @@ internal readonly record struct Primary : IComparable<Primary>
             SecondaryKind.None => $"None",
             SecondaryKind.Entity => new Entity(_value).ToString(),
             SecondaryKind.Object => new ObjectLink(_value).ToString(),
-            SecondaryKind.Hash => new Hash(_value).ToString(),
+            SecondaryKind.Family => new Family(_value).ToString(),
             _ => $"?-{_value:x16}",
         };
     }
