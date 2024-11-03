@@ -104,7 +104,7 @@ internal interface IStorage
 /// A front-end to System.Array for fast storage write and blit operations.
 /// </summary>
 /// <typeparam name="T">the type of the array elements</typeparam>
-internal class Storage<T> : IStorage
+internal class Storage<T> : IStorage, IRefIndexable<T>
 {
     private const int InitialCapacity = 32;
         
@@ -362,7 +362,7 @@ internal class Storage<T> : IStorage
     /// <remarks>
     /// Allows inspection of the entire array, not just the used elements.
     /// </remarks>
-    internal T this[int index] => _data[index];
+    public ref T this[int index] => ref _data[index];
 
     /// <summary>
     /// Cast to <see cref="Span{T}"/> implicitly.
